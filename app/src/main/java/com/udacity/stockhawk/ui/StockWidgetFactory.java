@@ -1,12 +1,12 @@
 package com.udacity.stockhawk.ui;
 
-
 import android.content.Context;
 import android.database.Cursor;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
+import android.widget.RemoteViews;
+import android.widget.RemoteViewsService;
 import android.widget.TextView;
 
 import com.udacity.stockhawk.R;
@@ -20,19 +20,20 @@ import java.util.Locale;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHolder> {
+/**
+ * Created by Robert on 12/15/2016.
+ */
 
-    final private Context context;
-    final private DecimalFormat dollarFormatWithPlus;
-    final private DecimalFormat dollarFormat;
-    final private DecimalFormat percentageFormat;
+public class StockWidgetFactory implements RemoteViewsService.RemoteViewsFactory {
+
     private Cursor cursor;
-    private StockAdapterOnClickHandler clickHandler;
+    private Context context;
+    private DecimalFormat dollarFormatWithPlus;
+    private DecimalFormat dollarFormat;
+    private DecimalFormat percentageFormat;
 
-    StockAdapter(Context context, StockAdapterOnClickHandler clickHandler) {
-        this.context = context;
-        this.clickHandler = clickHandler;
-
+    @Override
+    public void onCreate() {
         dollarFormat = (DecimalFormat) NumberFormat.getCurrencyInstance(Locale.getDefault());
         dollarFormatWithPlus = (DecimalFormat) NumberFormat.getCurrencyInstance(Locale.getDefault());
         dollarFormatWithPlus.setPositivePrefix("+$");
@@ -42,30 +43,33 @@ class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHolder> {
         percentageFormat.setPositivePrefix("+");
     }
 
-    void setCursor(Cursor cursor) {
-        this.cursor = cursor;
-        notifyDataSetChanged();
-    }
+    @Override
+    public void onDataSetChanged() {
 
-    String getSymbolAtPosition(int position) {
-
-        cursor.moveToPosition(position);
-        return cursor.getString(Contract.Quote.POSITION_SYMBOL);
     }
 
     @Override
-    public StockViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public void onDestroy() {
+
+    }
+
+    @Override
+    public int getCount() {
+        int count = 0;
+        if (cursor != null) {
+            count = cursor.getCount();
+        }
+        return count;
+    }
+
+    @Override
+    public RemoteViews getViewAt(int i) {
+
+        cursor.moveToPosition(i);
 
         View item = LayoutInflater.from(context).inflate(R.layout.list_item_quote, parent, false);
 
-        return new StockViewHolder(item);
-    }
-
-    @Override
-    public void onBindViewHolder(StockViewHolder holder, int position) {
-
-        cursor.moveToPosition(position);
-
+        RecyclerView.ViewHolder holder = new StockWidgetFactory.StockViewHolder(item);
 
         holder.symbol.setText(cursor.getString(Contract.Quote.POSITION_SYMBOL));
         holder.price.setText(dollarFormat.format(cursor.getFloat(Contract.Quote.POSITION_PRICE)));
@@ -89,22 +93,31 @@ class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHolder> {
         } else {
             holder.change.setText(percentage);
         }
-
-
     }
 
     @Override
-    public int getItemCount() {
-        int count = 0;
-        if (cursor != null) {
-            count = cursor.getCount();
-        }
-        return count;
+    public RemoteViews getLoadingView() {
+        return null;
     }
 
+    @Override
+    public int getViewTypeCount() {
+        return 1;
+    }
 
-    interface StockAdapterOnClickHandler {
-        void onClick(String symbol);
+    @Override
+    public long getItemId(int i) {
+        return i;
+    }
+
+    @Override
+    public boolean hasStableIds() {
+        return false;
+    }
+
+    void setCursor(Cursor cursor) {
+        this.cursor = cursor;
+
     }
 
     class StockViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -132,7 +145,5 @@ class StockAdapter extends RecyclerView.Adapter<StockAdapter.StockViewHolder> {
             clickHandler.onClick(cursor.getString(symbolColumn));
 
         }
-
-
     }
 }
