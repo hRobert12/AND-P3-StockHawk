@@ -1,24 +1,27 @@
 package com.udacity.stockhawk.ui;
 
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
-import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
-import android.view.View;
+import android.database.sqlite.SQLiteDatabase;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
-import android.widget.TextView;
 
 import com.udacity.stockhawk.R;
 import com.udacity.stockhawk.data.Contract;
+import com.udacity.stockhawk.data.DbHelper;
 import com.udacity.stockhawk.data.PrefUtils;
+import com.udacity.stockhawk.sync.QuoteSyncJob;
+
+import org.parceler.Parcels;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
+import timber.log.Timber;
+
+import static com.udacity.stockhawk.R.id.symbol;
 
 /**
  * Created by Robert on 12/15/2016.
@@ -55,6 +58,12 @@ public class StockWidgetFactory implements RemoteViewsService.RemoteViewsFactory
 
     @Override
     public int getCount() {
+
+        QuoteSyncJob.initialize(context);
+        DbHelper dbHelper = new DbHelper(context);
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        cursor = db.query(Contract.Quote.TABLE_NAME, null, null, null, null, null, null);
+
         int count = 0;
         if (cursor != null) {
             count = cursor.getCount();
@@ -67,21 +76,19 @@ public class StockWidgetFactory implements RemoteViewsService.RemoteViewsFactory
 
         cursor.moveToPosition(i);
 
-        View item = LayoutInflater.from(context).inflate(R.layout.list_item_quote, parent, false);
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.list_item_quote);
 
-        RecyclerView.ViewHolder holder = new StockWidgetFactory.StockViewHolder(item);
-
-        holder.symbol.setText(cursor.getString(Contract.Quote.POSITION_SYMBOL));
-        holder.price.setText(dollarFormat.format(cursor.getFloat(Contract.Quote.POSITION_PRICE)));
+        views.setTextViewText(symbol, cursor.getString(Contract.Quote.POSITION_SYMBOL));
+        views.setTextViewText(R.id.price, dollarFormat.format(cursor.getFloat(Contract.Quote.POSITION_PRICE)));
 
 
         float rawAbsoluteChange = cursor.getFloat(Contract.Quote.POSITION_ABSOLUTE_CHANGE);
         float percentageChange = cursor.getFloat(Contract.Quote.POSITION_PERCENTAGE_CHANGE);
 
         if (rawAbsoluteChange > 0) {
-            holder.change.setBackgroundResource(R.drawable.percent_change_pill_green);
+            views.setTextViewCompoundDrawables(R.id.change, R.drawable.percent_change_pill_green, R.drawable.percent_change_pill_green, R.drawable.percent_change_pill_green, R.drawable.percent_change_pill_green);
         } else {
-            holder.change.setBackgroundResource(R.drawable.percent_change_pill_red);
+            views.setTextViewCompoundDrawables(R.id.change, R.drawable.percent_change_pill_red, R.drawable.percent_change_pill_red, R.drawable.percent_change_pill_red, R.drawable.percent_change_pill_red);
         }
 
         String change = dollarFormatWithPlus.format(rawAbsoluteChange);
@@ -89,10 +96,36 @@ public class StockWidgetFactory implements RemoteViewsService.RemoteViewsFactory
 
         if (PrefUtils.getDisplayMode(context)
                 .equals(context.getString(R.string.pref_display_mode_absolute_key))) {
-            holder.change.setText(change);
+            views.setTextViewText(R.id.change, change);
         } else {
-            holder.change.setText(percentage);
+            views.setTextViewText(R.id.change, percentage);
         }
+
+        final Intent fillInIntent = new Intent();
+
+        Timber.d("Symbol clicked: %s", symbol);
+
+        String[] projection = {
+                Contract.Quote.COLUMN_PRICE,
+                Contract.Quote.COLUMN_SYMBOL
+        };
+
+        DbHelper dbHelper = new DbHelper(context);
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        fillInIntent.putExtra("histData", Parcels.wrap( new CursorHolder(
+                db.query(Contract.Quote.TABLE_NAME,
+                        projection,
+                        Contract.Quote.COLUMN_SYMBOL + " = " + symbol,
+                        null,
+                        null,
+                        null,
+                        null))
+        ));
+
+        views.setOnClickFillInIntent(R.id.top_level_view, fillInIntent);
+
+        return views;
     }
 
     @Override
@@ -107,43 +140,16 @@ public class StockWidgetFactory implements RemoteViewsService.RemoteViewsFactory
 
     @Override
     public long getItemId(int i) {
-        return i;
+        cursor.moveToPosition(i);
+        return cursor.getLong(Contract.Quote.POSITION_ID);
     }
 
     @Override
     public boolean hasStableIds() {
-        return false;
+        return true;
     }
 
-    void setCursor(Cursor cursor) {
-        this.cursor = cursor;
-
-    }
-
-    class StockViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-
-        @BindView(R.id.symbol)
-        TextView symbol;
-
-        @BindView(R.id.price)
-        TextView price;
-
-        @BindView(R.id.change)
-        TextView change;
-
-        StockViewHolder(View itemView) {
-            super(itemView);
-            ButterKnife.bind(this, itemView);
-            itemView.setOnClickListener(this);
-        }
-
-        @Override
-        public void onClick(View v) {
-            int adapterPosition = getAdapterPosition();
-            cursor.moveToPosition(adapterPosition);
-            int symbolColumn = cursor.getColumnIndex(Contract.Quote.COLUMN_SYMBOL);
-            clickHandler.onClick(cursor.getString(symbolColumn));
-
-        }
+    public void setContext(Context context) {
+        this.context = context;
     }
 }

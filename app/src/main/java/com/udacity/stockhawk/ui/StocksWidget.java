@@ -1,44 +1,24 @@
 package com.udacity.stockhawk.ui;
 
+import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import android.net.Uri;
 import android.widget.RemoteViews;
-import android.widget.TextView;
 
 import com.udacity.stockhawk.R;
-import com.udacity.stockhawk.data.Contract;
-import com.udacity.stockhawk.data.DbHelper;
-import com.udacity.stockhawk.sync.QuoteSyncJob;
+import com.udacity.stockhawk.data.ContextHolder;
+import com.udacity.stockhawk.sync.StockWidgetService;
 
 import org.parceler.Parcels;
-
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import timber.log.Timber;
 
 /**
  * Implementation of App Widget functionality.
  */
 public class StocksWidget extends AppWidgetProvider {
-
-    @BindView(R.id.recycler_view)
-    RecyclerView recyclerView;
-    @BindView(R.id.fab)
-    FloatingActionButton fab;
-    @BindView(R.id.swipe_refresh)
-    SwipeRefreshLayout swipeRefreshLayout;
-    @BindView(R.id.error)
-    TextView error;
-    private StockAdapter adapter;
-    DbHelper dbHelper = new DbHelper(this);
-
 //    @Override
 //    public void onClick(String symbol) {
 //        Timber.d("Symbol clicked: %s", symbol);
@@ -61,34 +41,21 @@ public class StocksWidget extends AppWidgetProvider {
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
 
-        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.stocks_widget);
 
-        views = new RemoteViews()
+        Intent intent = new Intent(context, StockWidgetService.class);
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+        intent.putExtra("Context", Parcels.wrap(new ContextHolder(context)));
+        intent.setData(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)));
+        RemoteViews rv = new RemoteViews(context.getPackageName(), R.layout.stocks_widget);
+        rv.setRemoteAdapter(appWidgetId, intent);
 
-        ButterKnife.bind();
+        Intent clickIntentTemplate = new Intent(context, StockDatails.class);
+        PendingIntent clickPendingIntentTemplate = TaskStackBuilder.create(context)
+                .addNextIntentWithParentStack(clickIntentTemplate)
+                .getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+        rv.setPendingIntentTemplate(R.id.recycler_view, clickPendingIntentTemplate);
 
-        adapter = new StockAdapter(context, new StockAdapter.StockAdapterOnClickHandler() {
-            @Override
-            public void onClick(String symbol) {
-                //...
-            }
-        });
-
-        recyclerView
-        views.setA;
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        swipeRefreshLayout.setOnRefreshListener(this);
-        swipeRefreshLayout.setRefreshing(true);
-        onRefresh();
-
-        QuoteSyncJob.initialize(this);
-        getSupportLoaderManager().initLoader(STOCK_LOADER, null, this);
-
-        // Construct the RemoteViews object
-
-        // Instruct the widget manager to update the widget
-        appWidgetManager.updateAppWidget(appWidgetId, views);
+        appWidgetManager.updateAppWidget(appWidgetId, rv);
     }
 
     @Override
