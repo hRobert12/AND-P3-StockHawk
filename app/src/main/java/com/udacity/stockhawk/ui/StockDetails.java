@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.LineChart;
@@ -45,7 +46,7 @@ public class StockDetails extends AppCompatActivity {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         String[] projection = {
-                Contract.Quote.COLUMN_PRICE,
+                Contract.Quote.COLUMN_HISTORY,
                 Contract.Quote.COLUMN_SYMBOL
         };
 
@@ -59,16 +60,24 @@ public class StockDetails extends AppCompatActivity {
 
         ArrayList<Entry> entries = new ArrayList<>();
 
+        //I don't know how to turn a string into useful info :(
+
         if (c.moveToFirst()) {
             while (c.moveToNext()) {
                 entries.add(new Entry(c.getPosition() * 2, c.getFloat(c.getColumnIndex(Contract.Quote.COLUMN_PRICE))));
             }
         }
 
-        LineDataSet dataSet = new LineDataSet(entries, "price");
-        LineData lineData = new LineData(dataSet);
-        chart.setData(lineData);
-        chart.invalidate();
+        if (entries.size() != 0) {
+
+            LineDataSet dataSet = new LineDataSet(entries, "price");
+            LineData lineData = new LineData(dataSet);
+            chart.setData(lineData);
+            chart.invalidate();
+
+        } else {
+            chart.setVisibility(View.GONE);
+        }
 
         if (getActionBar() != null) {
             getActionBar().setDisplayHomeAsUpEnabled(true);
