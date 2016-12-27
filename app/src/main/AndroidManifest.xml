@@ -39,7 +39,7 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <activity
-            android:name=".ui.StockDatails"
+            android:name=".ui.StockDetails"
             android:parentActivityName=".ui.MainActivity" />
 
         <receiver android:name=".ui.StocksWidget">

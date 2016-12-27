@@ -10,33 +10,12 @@ import android.net.Uri;
 import android.widget.RemoteViews;
 
 import com.udacity.stockhawk.R;
-import com.udacity.stockhawk.data.ContextHolder;
 import com.udacity.stockhawk.sync.StockWidgetService;
-
-import org.parceler.Parcels;
 
 /**
  * Implementation of App Widget functionality.
  */
 public class StocksWidget extends AppWidgetProvider {
-//    @Override
-//    public void onClick(String symbol) {
-//        Timber.d("Symbol clicked: %s", symbol);
-//
-//        String[] projection = {
-//                Contract.Quote.COLUMN_PRICE,
-//                Contract.Quote.COLUMN_SYMBOL
-//        };
-//        SQLiteDatabase db = dbHelper.getReadableDatabase();
-//        startActivity(new Intent(this, StockDatails.class).putExtra("stock", symbol).putExtra("histData", Parcels.wrap( new CursorHolder(
-//                db.query(Contract.Quote.TABLE_NAME,
-//                        projection,
-//                        Contract.Quote.COLUMN_SYMBOL + " = " + symbol,
-//                        null,
-//                        null,
-//                        null,
-//                        null))
-//        )));
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
@@ -44,12 +23,11 @@ public class StocksWidget extends AppWidgetProvider {
 
         Intent intent = new Intent(context, StockWidgetService.class);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
-        intent.putExtra("Context", Parcels.wrap(new ContextHolder(context)));
         intent.setData(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)));
         RemoteViews rv = new RemoteViews(context.getPackageName(), R.layout.stocks_widget);
         rv.setRemoteAdapter(appWidgetId, intent);
 
-        Intent clickIntentTemplate = new Intent(context, StockDatails.class);
+        Intent clickIntentTemplate = new Intent(context, StockDetails.class);
         PendingIntent clickPendingIntentTemplate = TaskStackBuilder.create(context)
                 .addNextIntentWithParentStack(clickIntentTemplate)
                 .getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);

@@ -8,12 +8,11 @@ import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 
 import com.udacity.stockhawk.R;
+import com.udacity.stockhawk.StockHawkApp;
 import com.udacity.stockhawk.data.Contract;
 import com.udacity.stockhawk.data.DbHelper;
 import com.udacity.stockhawk.data.PrefUtils;
 import com.udacity.stockhawk.sync.QuoteSyncJob;
-
-import org.parceler.Parcels;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -22,10 +21,6 @@ import java.util.Locale;
 import timber.log.Timber;
 
 import static com.udacity.stockhawk.R.id.symbol;
-
-/**
- * Created by Robert on 12/15/2016.
- */
 
 public class StockWidgetFactory implements RemoteViewsService.RemoteViewsFactory {
 
@@ -58,6 +53,8 @@ public class StockWidgetFactory implements RemoteViewsService.RemoteViewsFactory
 
     @Override
     public int getCount() {
+
+        context = StockHawkApp.getContext();
 
         QuoteSyncJob.initialize(context);
         DbHelper dbHelper = new DbHelper(context);
@@ -103,25 +100,7 @@ public class StockWidgetFactory implements RemoteViewsService.RemoteViewsFactory
 
         final Intent fillInIntent = new Intent();
 
-        Timber.d("Symbol clicked: %s", symbol);
-
-        String[] projection = {
-                Contract.Quote.COLUMN_PRICE,
-                Contract.Quote.COLUMN_SYMBOL
-        };
-
-        DbHelper dbHelper = new DbHelper(context);
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-
-        fillInIntent.putExtra("histData", Parcels.wrap( new CursorHolder(
-                db.query(Contract.Quote.TABLE_NAME,
-                        projection,
-                        Contract.Quote.COLUMN_SYMBOL + " = " + symbol,
-                        null,
-                        null,
-                        null,
-                        null))
-        ));
+        fillInIntent.putExtra("symbol", symbol);
 
         views.setOnClickFillInIntent(R.id.top_level_view, fillInIntent);
 
@@ -147,9 +126,5 @@ public class StockWidgetFactory implements RemoteViewsService.RemoteViewsFactory
     @Override
     public boolean hasStableIds() {
         return true;
-    }
-
-    public void setContext(Context context) {
-        this.context = context;
     }
 }
