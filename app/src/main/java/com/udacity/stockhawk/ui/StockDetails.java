@@ -82,6 +82,8 @@ public class StockDetails extends AppCompatActivity {
         if (getActionBar() != null) {
             getActionBar().setDisplayHomeAsUpEnabled(true);
         }
+
+        c.close();
     }
 
     @Override
