@@ -58,25 +58,39 @@ public class StockDetails extends AppCompatActivity {
                 null,
                 null);
 
-        ArrayList<Entry> entries = new ArrayList<>();
-
-        //I don't know how to turn a string into useful info :(
-
         if (c.moveToFirst()) {
-            while (c.moveToNext()) {
-                entries.add(new Entry(c.getPosition() * 2, c.getFloat(c.getColumnIndex(Contract.Quote.COLUMN_PRICE))));
+
+            String historyRaw = c.getString(Contract.Quote.POSITION_HISTORY);
+            String[] temp = historyRaw.split("\n");
+            String[][] finalData = new String[temp.length][2];
+
+            int i = 0;
+
+            for (String tempString : temp) {
+                String[] tempData = tempString.split(", ");
+                finalData[i] = tempData;
+
+                i++;
             }
-        }
 
-        if (entries.size() != 0) {
+            ArrayList<Entry> entries = new ArrayList<>();
 
-            LineDataSet dataSet = new LineDataSet(entries, "price");
-            LineData lineData = new LineData(dataSet);
-            chart.setData(lineData);
-            chart.invalidate();
+            for (String[] stringData : finalData) {
+                entries.add(new Entry(Float.parseFloat(stringData[0]), Float.parseFloat(stringData[1])));
+            }
 
-        } else {
-            chart.setVisibility(View.GONE);
+
+            if (entries.size() != 0) {
+
+                LineDataSet dataSet = new LineDataSet(entries, "price");
+                LineData lineData = new LineData(dataSet);
+                chart.setNoDataText("No Data");
+                chart.setData(lineData);
+                chart.invalidate();
+
+            } else {
+                chart.setVisibility(View.GONE);
+            }
         }
 
         if (getActionBar() != null) {
