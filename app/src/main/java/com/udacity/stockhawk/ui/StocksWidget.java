@@ -25,7 +25,7 @@ public class StocksWidget extends AppWidgetProvider {
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         intent.setData(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)));
         RemoteViews rv = new RemoteViews(context.getPackageName(), R.layout.stocks_widget);
-        rv.setRemoteAdapter(appWidgetId, intent);
+        rv.setRemoteAdapter(R.id.recycler_view, intent);
 
         Intent clickIntentTemplate = new Intent(context, StockDetails.class);
         PendingIntent clickPendingIntentTemplate = TaskStackBuilder.create(context)

@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-import static com.udacity.stockhawk.R.id.symbol;
-
 public class StockDetails extends AppCompatActivity {
     @BindView(R.id.symbol_details)
     TextView symbolText;
@@ -52,7 +50,7 @@ public class StockDetails extends AppCompatActivity {
 
         Cursor c = db.query(Contract.Quote.TABLE_NAME,
                 projection,
-                Contract.Quote.COLUMN_SYMBOL + " = " + symbol,
+                Contract.Quote.COLUMN_SYMBOL + " = \"" + recievedIntent.getStringExtra("stock") + "\"",
                 null,
                 null,
                 null,
@@ -60,7 +58,7 @@ public class StockDetails extends AppCompatActivity {
 
         if (c.moveToFirst()) {
 
-            String historyRaw = c.getString(Contract.Quote.POSITION_HISTORY);
+            String historyRaw = c.getString(c.getColumnIndex(Contract.Quote.COLUMN_HISTORY));
             String[] temp = historyRaw.split("\n");
             String[][] finalData = new String[temp.length][2];
 
@@ -76,7 +74,7 @@ public class StockDetails extends AppCompatActivity {
             ArrayList<Entry> entries = new ArrayList<>();
 
             for (String[] stringData : finalData) {
-                entries.add(new Entry(Float.parseFloat(stringData[0]), Float.parseFloat(stringData[1])));
+                entries.add(new Entry(Float.parseFloat(stringData[0]) / 100000000, Float.parseFloat(stringData[1])));
             }
 
 
@@ -86,7 +84,7 @@ public class StockDetails extends AppCompatActivity {
                 LineData lineData = new LineData(dataSet);
                 chart.setNoDataText("No Data");
                 chart.setData(lineData);
-                chart.invalidate();
+                //chart.invalidate();
 
             } else {
                 chart.setVisibility(View.GONE);
